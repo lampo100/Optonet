@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 
@@ -23,7 +24,7 @@ class Demand:
         self.first_node = first_node
         self.second_node = second_node
         self.paths = paths
-        self.value = value
+        self.value = int(float(value))
 
 
 class Network:
@@ -34,4 +35,11 @@ class Network:
         self.demands = demands
 
 
+class TransponderCard:
 
+    def __init__(self, capacity: int, cost: int):
+        self.capacity = capacity
+        self.cost = cost
+
+    def necessary_lambdas(self, demand_value):
+        return math.ceil(demand_value / self.capacity)

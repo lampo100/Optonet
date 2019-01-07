@@ -5,7 +5,7 @@ class EvolutionHandler:
     """
     EvolutionHandler handles evolution of the population.
     """
-    def __init__(self, starting_population, selection_handler, mutation_handler, crossover_handler, config):
+    def __init__(self, starting_population, selection_handler, mutation_handler, crossover_handler, replacement_handler, config):
         """
         Initialize EvolutionHandler with necessary components
         :param starting_population: Population of chromosomes to start the evolution with
@@ -18,24 +18,28 @@ class EvolutionHandler:
         self.__mutation_handler = mutation_handler
         self.__crossover_handler = crossover_handler
         self.__selection_handler = selection_handler
+        self.__replacement_handler = replacement_handler
         self.__config = config
-        self.age = 0
+        self.__age = 0
 
     def evolve(self):
         if self.__config['debug']:
             print("Current population age: {}".format(self.__age))
 
+        fitnesses = [chromosome.fitness for chromosome in self.__population]
+        print("Fitness sum: {}, avg: {}, max: {}".format(sum(fitnesses), sum(fitnesses)/len(fitnesses), max(fitnesses)))
+
         parents = self.__selection_handler.choose_parents(self.__population)
         new_population = self.__crossover_handler.crossover(parents)
         mutated_population = self.__mutation_handler.mutate(new_population)
-        if len(mutated_population) != self.__config['population_size']:
-            self.save_population()
-            raise Exception("New population size: {}. Expected: {}".format(
-                len(mutated_population),
-                self.__config['population_size'])
-            )
-        self.__population = mutated_population
-        self.age += 1
+        # if len(mutated_population) != self.__config['population_size']:
+        #     self.save_population()
+        #     raise Exception("New population size: {}. Expected: {}".format(
+        #         len(mutated_population),
+        #         self.__config['population_size'])
+        #     )
+        self.__population = self.__replacement_handler.replace_generation(self.__population, mutated_population)
+        self.__age += 1
 
     def save_population(self):
         """
@@ -43,7 +47,12 @@ class EvolutionHandler:
         :return:
         """
 
-
+    def get_best_chromosome(self):
+        best = self.__population[0]
+        for chromosome in self.__population:
+            if chromosome.fitness > best.fitness:
+                best = chromosome
+        return best
 
 class BaseCrossoverHandler(ABC):
     """
@@ -83,3 +92,16 @@ class BaseSelectionHandler(ABC):
         :return: parent population
         """
 
+
+class BaseReplacementHandler(ABC):
+    """
+    BaseReplacementHandler is the base class that every replacement handler should inherit from
+    """
+    @abstractmethod
+    def replace_generation(self, old_population, offsprings):
+        """
+        Decide which individuals from old population should be replaced with generated offsprings
+        :param old_population: current generation
+        :param offsprings: generated offsprings of current generation
+        :return: updated population
+        """

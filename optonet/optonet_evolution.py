@@ -1,7 +1,13 @@
-from .genetic import BaseCrossoverHandler, BaseMutationHandler, BaseSelectionHandler
+import random
+from typing import List
+
+from optonet.chromosome import OptonetChromosome, OptonetGene
+from optonet.consts import TRANSPONDER_CARDS
+from .genetic import BaseCrossoverHandler, BaseMutationHandler, BaseSelectionHandler, BaseReplacementHandler
 
 
 class OptonetCrossover(BaseCrossoverHandler):
+
     """
     BaseCrossoverHandler implementation for the problem of satisfying demand in optical network.
     """
@@ -12,9 +18,42 @@ class OptonetCrossover(BaseCrossoverHandler):
         :param parents: population of parents to choose from
         :return: population of children
         """
+        children = []
+        for parent1, parent2 in self._list_to_random_pairs(parents):
+            chld1, chld2 = self._do_crossover(parent1, parent2)
+            children.append(chld1)
+            children.append(chld2)
+        return children
+
+    def _do_crossover(self, parent1: OptonetChromosome, parent2: OptonetChromosome):
+        cutting_point = int(len(parent1.genes) / 2)
+        child1_genes = []
+        child2_genes = []
+        for gene_index in range(len(parent1.genes)):
+            if gene_index < cutting_point:
+                child1_genes.append(parent1.genes[gene_index])
+                child2_genes.append(parent2.genes[gene_index])
+            else:
+                child1_genes.append(parent2.genes[gene_index])
+                child2_genes.append(parent1.genes[gene_index])
+
+        return OptonetChromosome(child1_genes, parent1.penalty_calculator), OptonetChromosome(child2_genes, parent1.penalty_calculator)
+
+    def _list_to_random_pairs(self, lst):
+        pairs = []
+        while len(lst) >= 2:
+            rand1 = lst.pop(random.randrange(0, len(lst)))
+            rand2 = lst.pop(random.randrange(0, len(lst)))
+            pairs.append((rand1, rand2))
+
+        return pairs
 
 
 class OptonetMutation(BaseMutationHandler):
+
+    def __init__(self, mutation_chance=0.1, mutation_card_type_chance=0.5):
+        self._mutation_chance = mutation_chance
+        self._mutation_card_type_chance = mutation_card_type_chance
     """
     BaseMutationHandler implementation for the problem of satisfying demand in optical network.
     """
@@ -26,16 +65,60 @@ class OptonetMutation(BaseMutationHandler):
         :param population: population to mutate
         :return: mutated population
         """
+        for index in range(len(population)):
+            if random.random() < self._mutation_chance:
+                population[index] = self._do_mutate(population[index])
+
+        return population
+
+    def _do_mutate(self, chromosome):
+        mutated_gene_index = random.randrange(0, len(chromosome.genes))
+        mutated_gene = chromosome.genes[mutated_gene_index]
+
+        if random.random() < self._mutation_card_type_chance:
+            remaining_transponder_cards = TRANSPONDER_CARDS[:]
+            remaining_transponder_cards.remove(mutated_gene.chosen_card)
+            new_used_card = random.choice(remaining_transponder_cards)
+            chromosome.genes[mutated_gene_index] = OptonetGene(mutated_gene.demand, mutated_gene.chosen_path, new_used_card)
+        else:
+            remaining_paths = mutated_gene.demand.paths[:]
+            remaining_paths.remove(mutated_gene.chosen_path)
+            new_used_path = random.choice(remaining_paths)
+            chromosome.genes[mutated_gene_index] = OptonetGene(mutated_gene.demand, new_used_path, mutated_gene.chosen_card)
+
+        return chromosome
 
 
 class OptonetSelector(BaseSelectionHandler):
+
+    def __init__(self, best_fraction=0.1):
+        self._best_fraction = best_fraction
     """
     BaseSelectionHandler implementation for the problem of satisfying demand in optical network.
     """
-    def choose_parents(self, population):
+    def choose_parents(self, population: List[OptonetChromosome]):
         """
         Choose parents from given population. This implementation chooses best 10% of chromosomes as a possible parents.
         :param population: population to choose parents from.
         :return: possible parents of the next generation
         """
+        how_many = int(self._best_fraction * len(population))
+        return sorted(population, key=lambda x: x.fitness, reverse=True)[:how_many]
 
+
+class OptonetReplacer(BaseReplacementHandler):
+
+    def replace_generation(self, old_population, offsprings):
+        not_replaced_length = len(old_population) - len(offsprings)
+        return sorted(old_population, key=lambda x: x.fitness, reverse=True)[:not_replaced_length] + offsprings
+
+
+def initialize_optonet_population(network, population_size):
+    population = []
+    for i in range(population_size):
+        genes = []
+        for demand in network.demands:
+            genes.append(OptonetGene(demand, random.choice(demand.paths), random.choice(TRANSPONDER_CARDS)))
+        population.append(OptonetChromosome(genes))
+
+    return population
