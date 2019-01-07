@@ -1,7 +1,6 @@
 import xml.etree.ElementTree
-from pprint import pprint
 
-from network_model import Network, Link, Node, Demand
+from optonet.network_model import Network, Link, Node, Demand
 
 FIND_ADMISSIBLE_PATHS_NUMBER = 3
 
