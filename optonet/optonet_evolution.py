@@ -1,4 +1,5 @@
 import random
+from operator import attrgetter
 from typing import List
 
 from optonet.chromosome import OptonetChromosome, OptonetGene
@@ -89,7 +90,7 @@ class OptonetMutation(BaseMutationHandler):
         return chromosome
 
 
-class OptonetSelector(BaseSelectionHandler):
+class OptonetFittestFractionSelector(BaseSelectionHandler):
 
     def __init__(self, best_fraction=0.1):
         self._best_fraction = best_fraction
@@ -104,6 +105,49 @@ class OptonetSelector(BaseSelectionHandler):
         """
         how_many = int(self._best_fraction * len(population))
         return sorted(population, key=lambda x: x.fitness, reverse=True)[:how_many]
+
+
+class OptonetRouletteWheelSelector(BaseSelectionHandler):
+
+    def __init__(self, parents_number):
+        self.parents_number = parents_number
+
+    def choose_parents(self, population: List[OptonetChromosome]):
+        fitness_sum = sum(chromosome.fitness for chromosome in population)
+        current_fitness_accumulation = 0
+        parents = []
+
+        for i in range(self.parents_number):
+            wheel_result = random.uniform(0, fitness_sum)
+            for chromosome in population:
+                if current_fitness_accumulation + chromosome.fitness >= wheel_result:
+                    parents.append(chromosome)
+                    current_fitness_accumulation = 0
+                    break
+                else:
+                    current_fitness_accumulation += chromosome.fitness
+
+        return parents
+
+
+class OptonetTournamentSelector(BaseSelectionHandler):
+
+    def __init__(self, parents_number, tournament_size, fittest_chromosome_win_chance):
+        self.fittest_chromosome_win_chance = fittest_chromosome_win_chance
+        self.parents_number = parents_number
+        self.tournament_size = tournament_size
+
+    def choose_parents(self, population):
+        parents = []
+        for i in range(self.parents_number):
+            participants = random.sample(population, self.tournament_size)
+            chromosome_fittest_to_least_fittest = sorted(participants, key=lambda x: x.fitness, reverse=True)
+            for index, chromosome in enumerate(chromosome_fittest_to_least_fittest):
+                tournament_random_value = random.uniform(0, 1)
+                if (self.fittest_chromosome_win_chance > tournament_random_value) or index == len(population)-1:
+                    parents.append(chromosome)
+                    break
+        return parents
 
 
 class OptonetReplacer(BaseReplacementHandler):
