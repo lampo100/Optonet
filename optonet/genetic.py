@@ -5,7 +5,7 @@ class EvolutionHandler:
     """
     EvolutionHandler handles evolution of the population.
     """
-    def __init__(self, starting_population, selection_handler, mutation_handler, crossover_handler, replacement_handler, config):
+    def __init__(self, starting_population, selection_handler, mutation_handler, crossover_handler, replacement_handler, stats_counter, config):
         """
         Initialize EvolutionHandler with necessary components
         :param starting_population: Population of chromosomes to start the evolution with
@@ -19,6 +19,7 @@ class EvolutionHandler:
         self.__crossover_handler = crossover_handler
         self.__selection_handler = selection_handler
         self.__replacement_handler = replacement_handler
+        self.__stats_counter = stats_counter
         self.__config = config
         self.__age = 0
 
@@ -29,6 +30,7 @@ class EvolutionHandler:
         fitnesses = [chromosome.fitness for chromosome in self.__population]
         print("Fitness sum: {}, avg: {}, max: {}".format(sum(fitnesses), sum(fitnesses)/len(fitnesses), max(fitnesses)))
 
+        self.__stats_counter.count_stats(self.__age, self.__population)
         parents = self.__selection_handler.choose_parents(self.__population)
         new_population = self.__crossover_handler.crossover(parents)
         mutated_population = self.__mutation_handler.mutate(new_population)
