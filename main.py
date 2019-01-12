@@ -15,7 +15,14 @@ if __name__ == '__main__':
     crossover_handler = OptonetCrossover()
     replacement_handler = OptonetReplacer()
     config = {'debug': True}
-    evolution = EvolutionHandler(initial_population, selection_handler, mutation_handler, crossover_handler, replacement_handler, config)
+    evolution = EvolutionHandler(starting_population=initial_population,
+                                 selection_handler=selection_handler,
+                                 mutation_handler=mutation_handler,
+                                 crossover_handler=crossover_handler,
+                                 replacement_handler=replacement_handler,
+                                 config=config,
+                                 logger=None
+                                 )
     for i in range(100):
         evolution.evolve()
         if evolution.stop_condition_satisfied():
