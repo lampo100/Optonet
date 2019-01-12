@@ -35,4 +35,4 @@ if __name__ == '__main__':
         evolution3.evolve()
 
     best_stats = evolution.get_best_chromosome().stats()
-    print()
+    print(best_stats)

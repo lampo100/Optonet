@@ -16,6 +16,9 @@ class Link:
         self.second_node = second_node
         self.capacity = 92
 
+    def __repr__(self):
+        return "{} -> {}(C:{})".format(self.first_node, self.second_node, self.capacity)
+
 
 class Demand:
 
@@ -25,6 +28,7 @@ class Demand:
         self.second_node = second_node
         self.paths = paths
         self.value = int(float(value))
+
 
 
 class Network:
