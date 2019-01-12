@@ -58,6 +58,16 @@ class OptonetChromosome(Chromosome):
 
         return 1 / (cost + penalty)
 
+    @property
+    def penalty(self):
+        used_wavelengths_count = dict()
+        for gene in self.genes:
+            for link in gene.chosen_path:
+                used_wavelengths_count[link] = used_wavelengths_count.get(link, 0) \
+                                               + gene.chosen_card.necessary_lambdas(gene.demand.value)
+        return self.penalty_calculator.calc_penalty(used_wavelengths_count)
+
+
     def stats(self):
         node_to_cost = dict()
         link_to_lambdas_used = dict()
@@ -75,7 +85,13 @@ class OptonetChromosome(Chromosome):
         cost = sum(node_to_cost.values())
         penalty = self.penalty_calculator.calc_penalty(link_to_lambdas_used)
 
-        return {'cost': cost,
-                'penalty': penalty,
-                'node_to_cost': node_to_cost,
-                'link_to_lambdas_used': link_to_lambdas_used}
+        return """cost : {}
+                penalty: {}
+                Cost of transponder cards: {}
+                Wavelengths used at connections: {}""".format\
+                (
+                cost,
+                penalty,
+                node_to_cost,
+                link_to_lambdas_used
+                )

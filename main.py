@@ -2,6 +2,8 @@ from optonet.genetic import EvolutionHandler
 from optonet.model_parser import parse_xml
 from optonet.optonet_evolution import initialize_optonet_population, OptonetCrossover, OptonetMutation, OptonetSelector, \
     OptonetReplacer
+from plotter.plotter import visualize_network
+
 
 if __name__ == '__main__':
     janos_us = parse_xml('network_instances/janos-us.xml')  # currently demands have awkwardly similar paths i.e. the same starting links and only different at the end, might want to change this later
@@ -16,6 +18,8 @@ if __name__ == '__main__':
     evolution = EvolutionHandler(initial_population, selection_handler, mutation_handler, crossover_handler, replacement_handler, config)
     for i in range(100):
         evolution.evolve()
+        if evolution.stop_condition_satisfied():
+            break
 
     best_stats = evolution.get_best_chromosome().stats()
-    print()
+    print(best_stats)
