@@ -5,7 +5,9 @@ class EvolutionHandler:
     """
     EvolutionHandler handles evolution of the population.
     """
-    def __init__(self, starting_population, selection_handler, mutation_handler, crossover_handler, replacement_handler, stats_counter, config):
+
+    def __init__(self, starting_population, selection_handler, mutation_handler, crossover_handler, replacement_handler,
+                 stats_counter, config):
         """
         Initialize EvolutionHandler with necessary components
         :param starting_population: Population of chromosomes to start the evolution with
@@ -24,22 +26,23 @@ class EvolutionHandler:
         self.__age = 0
 
     def evolve(self):
+        """
+        Handle one evolution cycle(?). One cycle consists of:
+            1. Choosing parent chromosomes
+            2. Crossover operation
+            3. Mutation of the offsprings
+            4. Replacing part or all of the last generation with offsprings
+        """
         if self.__config['debug']:
             print("Current population age: {}".format(self.__age))
+            fitnesses = [chromosome.fitness for chromosome in self.__population]
+            print("Fitness sum: {}, avg: {}, max: {}".format(sum(fitnesses), sum(fitnesses) / len(fitnesses),
+                                                             max(fitnesses)))
 
-        fitnesses = [chromosome.fitness for chromosome in self.__population]
-        print("Fitness sum: {}, avg: {}, max: {}".format(sum(fitnesses), sum(fitnesses)/len(fitnesses), max(fitnesses)))
-
-        self.__stats_counter.count_stats(self.__age, self.__population)
+        self.__stats_counter.log_stats(self.__age, self.__population)
         parents = self.__selection_handler.choose_parents(self.__population)
         new_population = self.__crossover_handler.crossover(parents)
         mutated_population = self.__mutation_handler.mutate(new_population)
-        # if len(mutated_population) != self.__config['population_size']:
-        #     self.save_population()
-        #     raise Exception("New population size: {}. Expected: {}".format(
-        #         len(mutated_population),
-        #         self.__config['population_size'])
-        #     )
         self.__population = self.__replacement_handler.replace_generation(self.__population, mutated_population)
         self.__age += 1
 
@@ -50,16 +53,17 @@ class EvolutionHandler:
         """
 
     def get_best_chromosome(self):
-        best = self.__population[0]
-        for chromosome in self.__population:
-            if chromosome.fitness > best.fitness:
-                best = chromosome
-        return best
+        return max(self.__population, key=lambda x: x.fitness)
+
+    def stop_condition_satisfied(self):
+        return self.get_best_chromosome().penalty == 0 and self.__age > 0
+
 
 class BaseCrossoverHandler(ABC):
     """
     BaseCrossoverHandler is base class that every crossover handler should inherit from
     """
+
     @abstractmethod
     def crossover(self, parents):
         """
@@ -73,6 +77,7 @@ class BaseMutationHandler(ABC):
     """
     BaseMutationHandler is base class that every mutation handler should inherit from
     """
+
     @abstractmethod
     def mutate(self, population):
         """
@@ -86,6 +91,7 @@ class BaseSelectionHandler(ABC):
     """
     BaseSelectionHandler is the base class that every selection handler should inherit from
     """
+
     @abstractmethod
     def choose_parents(self, population):
         """
@@ -99,6 +105,7 @@ class BaseReplacementHandler(ABC):
     """
     BaseReplacementHandler is the base class that every replacement handler should inherit from
     """
+
     @abstractmethod
     def replace_generation(self, old_population, offsprings):
         """
