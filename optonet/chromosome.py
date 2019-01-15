@@ -40,20 +40,20 @@ class OptonetChromosome(Chromosome):
         self.fitness = self.calc_fitness()
 
     def calc_fitness(self):
-        node_to_cost = dict()
+        cost_at_node = dict()
         link_to_lambdas_used = dict()
 
         for gene in self.genes:
             source = gene.demand.first_node
             target = gene.demand.second_node
-            node_to_cost[source] = node_to_cost.get(source, 0) + gene.chosen_card.cost
-            node_to_cost[target] = node_to_cost.get(target, 0) + gene.chosen_card.cost
+            cost_at_node[source] = cost_at_node.get(source, 0) + gene.chosen_card.cost
+            cost_at_node[target] = cost_at_node.get(target, 0) + gene.chosen_card.cost
 
             for link in gene.chosen_path:
                 link_to_lambdas_used[link] = link_to_lambdas_used.get(link, 0)\
                                              + gene.chosen_card.necessary_lambdas(gene.demand.value)
 
-        cost = sum(node_to_cost.values())
+        cost = sum(cost_at_node.values())
 
         return 1 / (cost + self.penalty)
 
@@ -67,29 +67,48 @@ class OptonetChromosome(Chromosome):
         return self.penalty_calculator.calc_penalty(used_wavelengths_count)
 
     def stats(self):
-        node_to_cost = dict()
+        cost_at_node = dict()
         link_to_lambdas_used = dict()
 
         for gene in self.genes:
             source = gene.demand.first_node
             target = gene.demand.second_node
-            node_to_cost[source] = node_to_cost.get(source, 0) + gene.chosen_card.cost
-            node_to_cost[target] = node_to_cost.get(target, 0) + gene.chosen_card.cost
+            cost_at_node[source] = cost_at_node.get(source, 0) + gene.chosen_card.cost
+            cost_at_node[target] = cost_at_node.get(target, 0) + gene.chosen_card.cost
 
             for link in gene.chosen_path:
                 link_to_lambdas_used[link] = link_to_lambdas_used.get(link, 0) \
                                              + gene.chosen_card.necessary_lambdas(gene.demand.value)
 
-        cost = sum(node_to_cost.values())
+        cost = sum(cost_at_node.values())
         penalty = self.penalty_calculator.calc_penalty(link_to_lambdas_used)
 
-        return """cost : {}
-                penalty: {}
-                Cost of transponder cards: {}
-                Wavelengths used at connections: {}""".format\
+        return """cost : {} penalty: {}\nCost of transponder cards: {}\nWavelengths used at connections: {}""".format\
                 (
                 cost,
                 penalty,
-                node_to_cost,
+                cost_at_node,
                 link_to_lambdas_used
                 )
+
+    def stats2(self):
+        cost_at_node = {}
+        link_to_lambdas_used = {}
+        demands = {}
+
+        for gene in self.genes:
+            source = gene.demand.first_node
+            target = gene.demand.second_node
+
+            demands.setdefault(source, []).append([target, gene.demand.value])
+            cost_at_node[source] = cost_at_node.get(source, 0) + gene.chosen_card.cost
+            cost_at_node[target] = cost_at_node.get(target, 0) + gene.chosen_card.cost
+
+            for link in gene.chosen_path:
+                link_to_lambdas_used.setdefault(link, []).append([
+                    source,
+                    target,
+                    gene.chosen_card.necessary_lambdas(gene.demand.value)
+                ])
+
+        return (demands, cost_at_node, link_to_lambdas_used)

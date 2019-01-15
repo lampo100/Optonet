@@ -58,6 +58,9 @@ class EvolutionHandler:
     def stop_condition_satisfied(self):
         return self.get_best_chromosome().penalty == 0 and self.__age > 0
 
+    def __repr__(self):
+        return "Optonet Evolution Handler( {}, {}, {})".format(self.__selection_handler, self.__crossover_handler, self.__mutation_handler)
+
 
 class BaseCrossoverHandler(ABC):
     """

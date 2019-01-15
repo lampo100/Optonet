@@ -49,12 +49,16 @@ class OptonetCrossover(BaseCrossoverHandler):
 
         return pairs
 
+    def __repr__(self):
+        return "Simple Crossover"
+
+
 
 class OptonetMutation(BaseMutationHandler):
 
     def __init__(self, mutation_chance=0.1, mutation_card_type_chance=0.5):
-        self._mutation_chance = mutation_chance
-        self._mutation_card_type_chance = mutation_card_type_chance
+        self.__mutation_chance = mutation_chance
+        self.__mutation_card_type_chance = mutation_card_type_chance
     """
     BaseMutationHandler implementation for the problem of satisfying demand in optical network.
     """
@@ -67,7 +71,7 @@ class OptonetMutation(BaseMutationHandler):
         :return: mutated population
         """
         for index in range(len(population)):
-            if random.random() < self._mutation_chance:
+            if random.random() < self.__mutation_chance:
                 population[index] = self._do_mutate(population[index])
 
         return population
@@ -76,7 +80,7 @@ class OptonetMutation(BaseMutationHandler):
         mutated_gene_index = random.randrange(0, len(chromosome.genes))
         mutated_gene = chromosome.genes[mutated_gene_index]
 
-        if random.random() < self._mutation_card_type_chance:
+        if random.random() < self.__mutation_card_type_chance:
             remaining_transponder_cards = TRANSPONDER_CARDS[:]
             remaining_transponder_cards.remove(mutated_gene.chosen_card)
             new_used_card = random.choice(remaining_transponder_cards)
@@ -89,35 +93,41 @@ class OptonetMutation(BaseMutationHandler):
 
         return chromosome
 
+    def __repr__(self):
+        return "Simple Mutation(mutation_chance={}; card_mutation_chance={})".format(self.__mutation_chance, self.__mutation_card_type_chance)
+
 
 class OptonetFittestFractionSelector(BaseSelectionHandler):
 
     def __init__(self, best_fraction=0.1):
-        self._best_fraction = best_fraction
+        self.__best_fraction = best_fraction
     """
     BaseSelectionHandler implementation for the problem of satisfying demand in optical network.
     """
     def choose_parents(self, population: List[OptonetChromosome]):
         """
-        Choose parents from given population. This implementation chooses best 10% of chromosomes as a possible parents.
+        Choose fraction of best chromosomes from current population as parents.
         :param population: population to choose parents from.
         :return: possible parents of the next generation
         """
-        how_many = int(self._best_fraction * len(population))
+        how_many = int(self.__best_fraction * len(population))
         return sorted(population, key=lambda x: x.fitness, reverse=True)[:how_many]
+
+    def __repr__(self):
+        return "Fitness Fraction Selector(best_fraction={})".format(self.__best_fraction)
 
 
 class OptonetRouletteWheelSelector(BaseSelectionHandler):
 
     def __init__(self, parents_number):
-        self.parents_number = parents_number
+        self.__parents_number = parents_number
 
     def choose_parents(self, population: List[OptonetChromosome]):
         fitness_sum = sum(chromosome.fitness for chromosome in population)
         current_fitness_accumulation = 0
         parents = []
 
-        for i in range(self.parents_number):
+        for i in range(self.__parents_number):
             wheel_result = random.uniform(0, fitness_sum)
             for chromosome in population:
                 if current_fitness_accumulation + chromosome.fitness >= wheel_result:
@@ -129,25 +139,31 @@ class OptonetRouletteWheelSelector(BaseSelectionHandler):
 
         return parents
 
+    def __repr__(self):
+        return "Roulette Selector"
+
 
 class OptonetTournamentSelector(BaseSelectionHandler):
 
     def __init__(self, parents_number, tournament_size, fittest_chromosome_win_chance):
-        self.fittest_chromosome_win_chance = fittest_chromosome_win_chance
-        self.parents_number = parents_number
-        self.tournament_size = tournament_size
+        self.__fittest_chromosome_win_chance = fittest_chromosome_win_chance
+        self.__parents_number = parents_number
+        self.__tournament_size = tournament_size
 
     def choose_parents(self, population):
         parents = []
-        for i in range(self.parents_number):
-            participants = random.sample(population, self.tournament_size)
+        for i in range(self.__parents_number):
+            participants = random.sample(population, self.__tournament_size)
             chromosome_fittest_to_least_fittest = sorted(participants, key=lambda x: x.fitness, reverse=True)
             for index, chromosome in enumerate(chromosome_fittest_to_least_fittest):
                 tournament_random_value = random.uniform(0, 1)
-                if (self.fittest_chromosome_win_chance > tournament_random_value) or index == len(population)-1:
+                if (self.__fittest_chromosome_win_chance > tournament_random_value) or index == len(population)-1:
                     parents.append(chromosome)
                     break
         return parents
+
+    def __repr__(self):
+        return "Tournament Selector(tournament_size={}; win_chance={})".format(self.__tournament_size, self.__fittest_chromosome_win_chance)
 
 
 class OptonetReplacer(BaseReplacementHandler):
