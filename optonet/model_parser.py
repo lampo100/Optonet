@@ -1,4 +1,6 @@
 import xml.etree.ElementTree
+import networkx as nx
+import random
 
 from optonet.network_model import Network, Link, Node, Demand
 
@@ -74,28 +76,16 @@ def parse_xml(xml_path: str) -> Network:
 
 
 def _find_paths(links, source, target, paths_no):
-    node_to_neighbours = dict()
-    node_to_is_visited = dict()
+    edges = [(link.first_node, link.second_node) for link in links]
+    graph = nx.Graph(edges)
+    all_paths = random.choices([x for x in nx.all_simple_paths(graph, source=source, target=target)], k=paths_no)
+    paths_of_links = [[]] * paths_no
+    for index, path in enumerate(all_paths):
+        i = 0
+        while i != len(path) - 1:
+            for link in links:
+                if (link.first_node == path[i] and link.second_node == path[i+1]) or (link.first_node == path[i+1] and link.second_node == path[i]):
+                    paths_of_links[index].append(link)
+            i += 1
 
-    for link in links:
-        node_to_neighbours.setdefault(link.first_node, []).append((link.second_node, link))
-        node_to_neighbours.setdefault(link.second_node, []).append((link.first_node, link))
-
-    paths = []
-
-    _find_paths_dfs(paths, node_to_neighbours, node_to_is_visited, paths_no, source, target, [])
-
-    return paths
-
-
-def _find_paths_dfs(found_paths, node_to_neighbours, node_to_is_visited, paths_no, current_node, target, path_so_far):
-    if current_node == target:
-        found_paths.append(path_so_far)
-    else:
-        node_to_is_visited[current_node] = True
-        for neighbour in node_to_neighbours[current_node]:
-            if not node_to_is_visited.get(neighbour[0], False):
-                _find_paths_dfs(found_paths, node_to_neighbours, node_to_is_visited, paths_no, neighbour[0], target, path_so_far + [neighbour[1]])
-                node_to_is_visited[neighbour[0]] = False
-                if (len(found_paths)) == paths_no:
-                    return
+    return paths_of_links
