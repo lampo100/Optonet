@@ -1,7 +1,8 @@
 import time
 from plotter.plotter import visualize_evolution
 
-def benchmark_evolution(evolution_handler, gen_iters, stats_counter, fitness_plot_name, stop_when_solution_found=True):
+
+def benchmark_evolution(evolution_handler, gen_iters, stats_counter, stats_filename, fitness_plot_name, stop_when_solution_found=True):
         """
         Benchmark evolution and
         :param evolution_handler: evolution handler to benchmark
@@ -17,7 +18,9 @@ def benchmark_evolution(evolution_handler, gen_iters, stats_counter, fitness_plo
                 break
         stop = time.time()
         print("Stop benchmark")
-        print("Time: {}".format(stop - start))
-        print("Stats: \n{}\n".format(evolution_handler.get_best_chromosome().stats()))
+
+        with open(stats_filename, 'w') as stats_file:
+            stats_file.write("Time: {}\n".format(stop - start))
+            stats_file.write("Stats: \n{}\n".format(evolution_handler.get_best_chromosome().stats()))
 
         visualize_evolution(stats_counter.stats, fitness_plot_name)

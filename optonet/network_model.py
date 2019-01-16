@@ -1,6 +1,8 @@
 import math
+import random
 from typing import List
 
+WAVELENGTHS_COUNT = [8, 16, 32, 64, 96]
 
 class Node:
 
@@ -14,7 +16,7 @@ class Link:
         self.id = id
         self.first_node = first_node
         self.second_node = second_node
-        self.capacity = 92
+        self.capacity = 1024
 
     def __repr__(self):
         return "{} -> {}(C:{})".format(self.first_node, self.second_node, self.capacity)
