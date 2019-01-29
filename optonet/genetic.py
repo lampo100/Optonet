@@ -46,11 +46,14 @@ class EvolutionHandler:
         self.__population = self.__replacement_handler.replace_generation(self.__population, mutated_population)
         self.__age += 1
 
-    def save_population(self):
+    def save_population(self, output_file):
         """
         Saves current population
         :return:
         """
+        serialized = ""
+        for chromosome in self.__population:
+            serialized += chromosome.serialize()
 
     def get_best_chromosome(self):
         return max(self.__population, key=lambda x: x.fitness)

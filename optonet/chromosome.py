@@ -13,17 +13,17 @@ class OptonetGene:
     """
     OptonetGene represents solution to one demand in optical network
     """
-    def __init__(self, demand, chosen_path, chosen_card):
+    def __init__(self, demand, chosen_path, chosen_cards):
         """
         Return initialized instance of OptonetGene
         :param demand: value of the data demand
         :param paths: all paths that can be used to satisfy this demand
         :param chosen_path: path chosen to use for this demand
-        :param chosen_card: chosen transponder card to use for this demand
+        :param chosen_cards: chosen transponder cards to use for this demand
         """
         self.demand = demand
         self.chosen_path = chosen_path
-        self.chosen_card = chosen_card
+        self.chosen_cards = chosen_cards
 
 
 class OptonetChromosome(Chromosome):
@@ -41,17 +41,12 @@ class OptonetChromosome(Chromosome):
 
     def calc_fitness(self):
         cost_at_node = dict()
-        link_to_lambdas_used = dict()
 
         for gene in self.genes:
             source = gene.demand.first_node
             target = gene.demand.second_node
-            cost_at_node[source] = cost_at_node.get(source, 0) + gene.chosen_card.cost
-            cost_at_node[target] = cost_at_node.get(target, 0) + gene.chosen_card.cost
-
-            for link in gene.chosen_path:
-                link_to_lambdas_used[link] = link_to_lambdas_used.get(link, 0)\
-                                             + gene.chosen_card.necessary_lambdas(gene.demand.value)
+            cost_at_node[source] = cost_at_node.get(source, 0) + sum((card.cost for card in gene.chosen_cards))
+            cost_at_node[target] = cost_at_node.get(target, 0) + sum((card.cost for card in gene.chosen_cards))
 
         cost = sum(cost_at_node.values())
 
@@ -63,16 +58,27 @@ class OptonetChromosome(Chromosome):
         for gene in self.genes:
             for link in gene.chosen_path:
                 used_wavelengths_count[link] = used_wavelengths_count.get(link, 0) \
-                                               + gene.chosen_card.necessary_lambdas(gene.demand.value)
+                                               + len(gene.chosen_cards)
         return self.penalty_calculator.calc_penalty(used_wavelengths_count)
 
     def stats(self):
         cost_at_node = dict()
         link_to_lambdas_used = dict()
+        cards_at_node = dict()
 
         for gene in self.genes:
             source = gene.demand.first_node
             target = gene.demand.second_node
+            if source not in cards_at_node:
+                cards_at_node[source] = [str(gene.chosen_card.cost)]
+            else:
+                cards_at_node[source].append(str(gene.chosen_card.cost))
+
+            if target not in cards_at_node:
+                cards_at_node[target] = [str(gene.chosen_card.cost)]
+            else:
+                cards_at_node[target].append(str(gene.chosen_card.cost))
+
             cost_at_node[source] = cost_at_node.get(source, 0) + gene.chosen_card.cost
             cost_at_node[target] = cost_at_node.get(target, 0) + gene.chosen_card.cost
 
@@ -83,11 +89,12 @@ class OptonetChromosome(Chromosome):
         cost = sum(cost_at_node.values())
         penalty = self.penalty_calculator.calc_penalty(link_to_lambdas_used)
 
-        return """cost : {} penalty: {}\nCost of transponder cards: {}\nWavelengths used at connections: {}""".format\
+        return """cost : {} penalty: {}\nCost of transponder cards: {}\nCards costs at nodes: {}\nWavelengths used at connections: {}""".format\
                 (
                 cost,
                 penalty,
                 cost_at_node,
+                cards_at_node,
                 link_to_lambdas_used
                 )
 
