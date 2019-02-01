@@ -15,12 +15,15 @@ def benchmark_evolution(evolution_handler, gen_iters, stats_counter, stats_filen
         for i in range(gen_iters):
             evolution_handler.evolve()
             if stop_when_solution_found and evolution_handler.stop_condition_satisfied():
-                break
+                pass
+            if i % 15 == 0:
+                with open(stats_filename, 'w') as stats_file:
+                    stats_file.write("Population age: {}\n".format(evolution_handler.get_age()))
+                    stats_file.write("Stats: \n{}\n".format(evolution_handler.get_best_chromosome().stats()))
         stop = time.time()
         print("Stop benchmark")
-
         with open(stats_filename, 'w') as stats_file:
-            stats_file.write("Time: {}\n".format(stop - start))
+            stats_file.write("Population age: {}\n".format(evolution_handler.get_age()))
+            stats_file.write("Time: {}\n".format(stop-start))
             stats_file.write("Stats: \n{}\n".format(evolution_handler.get_best_chromosome().stats()))
-
         visualize_evolution(stats_counter.stats, fitness_plot_name)

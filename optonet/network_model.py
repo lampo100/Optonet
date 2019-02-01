@@ -16,7 +16,7 @@ class Link:
         self.id = id
         self.first_node = first_node
         self.second_node = second_node
-        self.capacity = 1024
+        self.capacity = 32
 
     def __repr__(self):
         return "{} -> {}(C:{})".format(self.first_node, self.second_node, self.capacity)

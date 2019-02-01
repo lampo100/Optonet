@@ -81,15 +81,16 @@ class OptonetMutation(BaseMutationHandler):
         mutated_gene = chromosome.genes[mutated_gene_index]
 
         if random.random() < self.__mutation_card_type_chance:
-            remaining_transponder_cards = TRANSPONDER_CARDS[:]
-            remaining_transponder_cards.remove(mutated_gene.chosen_card)
-            new_used_card = random.choice(remaining_transponder_cards)
-            chromosome.genes[mutated_gene_index] = OptonetGene(mutated_gene.demand, mutated_gene.chosen_path, new_used_card)
+            # Find new transpoder cards combination that meets the demand
+            new_cards = []
+            while sum((card.capacity for card in new_cards)) < mutated_gene.demand.value:
+                new_cards.append(random.choice(TRANSPONDER_CARDS))
+            chromosome.genes[mutated_gene_index] = OptonetGene(mutated_gene.demand, mutated_gene.chosen_path, new_cards)
         else:
             remaining_paths = mutated_gene.demand.paths[:]
             remaining_paths.remove(mutated_gene.chosen_path)
             new_used_path = random.choice(remaining_paths)
-            chromosome.genes[mutated_gene_index] = OptonetGene(mutated_gene.demand, new_used_path, mutated_gene.chosen_card)
+            chromosome.genes[mutated_gene_index] = OptonetGene(mutated_gene.demand, new_used_path, mutated_gene.chosen_cards)
 
         return chromosome
 
@@ -178,7 +179,10 @@ def initialize_optonet_population(network, population_size):
     for i in range(population_size):
         genes = []
         for demand in network.demands:
-            genes.append(OptonetGene(demand, random.choice(demand.paths), random.choice(TRANSPONDER_CARDS)))
+            cards = []
+            while sum((card.capacity for card in cards)) < demand.value:
+                cards.append(random.choice(TRANSPONDER_CARDS))
+            genes.append(OptonetGene(demand, random.choice(demand.paths), cards))
         population.append(OptonetChromosome(genes))
 
     return population
