@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import Counter
 
 from optonet.penalty import DefaultPenaltyCalculator
 
@@ -69,22 +70,13 @@ class OptonetChromosome(Chromosome):
         for gene in self.genes:
             source = gene.demand.first_node
             target = gene.demand.second_node
-            if source not in cards_at_node:
-                cards_at_node[source] = [str(gene.chosen_card.cost)]
-            else:
-                cards_at_node[source].append(str(gene.chosen_card.cost))
-
-            if target not in cards_at_node:
-                cards_at_node[target] = [str(gene.chosen_card.cost)]
-            else:
-                cards_at_node[target].append(str(gene.chosen_card.cost))
-
-            cost_at_node[source] = cost_at_node.get(source, 0) + gene.chosen_card.cost
-            cost_at_node[target] = cost_at_node.get(target, 0) + gene.chosen_card.cost
-
+            cards_at_node.setdefault(source, Counter([str(card.cost) for card in gene.chosen_cards])).update([str(card.cost) for card in gene.chosen_cards])
+            cards_at_node.setdefault(target, Counter([str(card.cost) for card in gene.chosen_cards])).update([str(card.cost) for card in gene.chosen_cards])
+            cost_at_node[source] = cost_at_node.get(source, 0) + sum((card.cost for card in gene.chosen_cards))
+            cost_at_node[target] = cost_at_node.get(target, 0) + sum((card.cost for card in gene.chosen_cards))
             for link in gene.chosen_path:
                 link_to_lambdas_used[link] = link_to_lambdas_used.get(link, 0) \
-                                             + gene.chosen_card.necessary_lambdas(gene.demand.value)
+                                             + len(gene.chosen_cards)
 
         cost = sum(cost_at_node.values())
         penalty = self.penalty_calculator.calc_penalty(link_to_lambdas_used)

@@ -55,6 +55,9 @@ class EvolutionHandler:
         for chromosome in self.__population:
             serialized += chromosome.serialize()
 
+    def get_age(self):
+        return self.__age
+
     def get_best_chromosome(self):
         return max(self.__population, key=lambda x: x.fitness)
 
